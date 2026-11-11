@@ -59,6 +59,25 @@ systemctl --user daemon-reload
 systemctl --user enable --now hyprbeam.service >/dev/null 2>&1
 systemctl --user restart hyprbeam.service
 
+# Super+Alt+N brings screen N of the map (the number the app shows); added once, kept if edited.
+hypr="$HOME/.config/hypr"
+if [[ -f "$hypr/bindings.lua" ]] && ! grep -q 'hyprbeam screen' "$hypr/bindings.lua"; then
+  say "Adding Super+Alt+1…9 (bring screen N) to your Hyprland bindings"
+  cat >> "$hypr/bindings.lua" <<'LUA'
+
+-- hyprbeam: Super+Alt+N brings screen N of the map (the number the app shows); one of this
+-- machine's own numbers comes home.
+for i = 1, 9 do
+  o.bind("SUPER + ALT + " .. i, "hyprbeam: screen " .. i, "hyprbeam screen " .. i)
+end
+LUA
+elif [[ -f "$hypr/bindings.conf" ]] && ! grep -q 'hyprbeam screen' "$hypr/bindings.conf"; then
+  say "Adding Super+Alt+1…9 (bring screen N) to your Hyprland bindings"
+  { echo; echo "# hyprbeam: Super+Alt+N brings screen N of the map (the number the app shows)"
+    for i in 1 2 3 4 5 6 7 8 9; do echo "bindd = SUPER ALT, $i, hyprbeam: screen $i, exec, hyprbeam screen $i"; done
+  } >> "$hypr/bindings.conf"
+fi
+
 if systemctl is-active --quiet ufw 2>/dev/null; then
   say "Opening the firewall for other machines (ports 24820 and 24821)"
   sudo ufw allow 24820/tcp comment hyprbeam-link >/dev/null && sudo ufw allow 24821 comment hyprbeam-pairing >/dev/null \
