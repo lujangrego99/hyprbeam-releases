@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# hyprbeam installer for Omarchy / Hyprland.
+# hyprbeam installer for Omarchy / Hyprland (Arch package) and Ubuntu / Debian with GNOME (.deb).
 #
 #   curl -fsSL https://raw.githubusercontent.com/lujangrego99/hyprbeam-releases/main/install.sh | bash
 #   (or, from a clone: ./install.sh)
@@ -30,8 +30,18 @@ fetch() { # pattern → file in $tmp, from the latest public release
 }
 
 say "Getting hyprbeam"
+if ! command -v pacman >/dev/null && command -v apt-get >/dev/null; then
+  # Ubuntu / Debian: the .deb built on Ubuntu 24.04 (runs there and on newer).
+  arch="$(dpkg --print-architecture)"
+  deb="$(fetch "hyprbeam_*_${arch}.deb" || true)"
+  [[ -n "$deb" ]] || { warn "No hyprbeam package for $arch in the latest release."; exit 1; }
+  say "Installing the package (asks for your password)"
+  sudo apt-get install -y "$deb" >/dev/null
+  pkg=""
+else
 pkg="$(fetch 'hyprbeam-*-x86_64.pkg.tar.zst' || true)"
-if [[ -z "$pkg" ]]; then
+fi
+if [[ -z "${deb:-}" && -z "$pkg" ]]; then
   say "No package in the latest release: building one from source"
   src="$tmp/src"
   if [[ -f "$(dirname "${BASH_SOURCE[0]:-.}")/pkg/PKGBUILD" ]]; then
@@ -47,8 +57,10 @@ if [[ -z "$pkg" ]]; then
   pkg="$(ls "$src"/pkg/hyprbeam-*-x86_64.pkg.tar.zst | head -1)"
 fi
 
-say "Installing the package (asks for your password)"
-sudo pacman -U --noconfirm --needed "$pkg" >/dev/null
+if [[ -n "$pkg" ]]; then
+  say "Installing the package (asks for your password)"
+  sudo pacman -U --noconfirm --needed "$pkg" >/dev/null
+fi
 
 # An earlier hyprbeam installed itself per user; that unit would hide the packaged one.
 if [[ -f "$HOME/.config/systemd/user/hyprbeam.service" ]]; then
@@ -84,8 +96,17 @@ if systemctl is-active --quiet ufw 2>/dev/null; then
     || warn "Could not change the firewall. Run: sudo ufw allow 24820/tcp && sudo ufw allow 24821"
 fi
 
+if [[ ${XDG_CURRENT_DESKTOP:-} == *GNOME* ]]; then
+cat <<MSG
+
+hyprbeam is running. Open it from Activities (search "hyprbeam") to pair your machines and
+arrange their screens. Sign out and back in once: the edge effects and screen numbers come
+with hyprbeam's GNOME Shell extension, which GNOME loads at sign-in.
+MSG
+else
 cat <<MSG
 
 hyprbeam is running. Open it from the launcher (Super + Space → hyprbeam) to pair your
 machines and arrange their screens.
 MSG
+fi
