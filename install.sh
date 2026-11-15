@@ -90,10 +90,13 @@ elif [[ -f "$hypr/bindings.conf" ]] && ! grep -q 'hyprbeam screen' "$hypr/bindin
   } >> "$hypr/bindings.conf"
 fi
 
+# 24820/tcp the link, 24821 pairing (udp+tcp), 24830/tcp «modo jugar» (phones load the game's
+# controller page from this computer: without it they time out).
 if systemctl is-active --quiet ufw 2>/dev/null; then
-  say "Opening the firewall for other machines (ports 24820 and 24821)"
+  say "Opening the firewall for other machines and phones (ports 24820, 24821 and 24830)"
   sudo ufw allow 24820/tcp comment hyprbeam-link >/dev/null && sudo ufw allow 24821 comment hyprbeam-pairing >/dev/null \
-    || warn "Could not change the firewall. Run: sudo ufw allow 24820/tcp && sudo ufw allow 24821"
+    && sudo ufw allow 24830/tcp comment hyprbeam-play >/dev/null \
+    || warn "Could not change the firewall. Run: sudo ufw allow 24820/tcp && sudo ufw allow 24821 && sudo ufw allow 24830/tcp"
 fi
 
 if [[ ${XDG_CURRENT_DESKTOP:-} == *GNOME* ]]; then
