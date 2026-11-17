@@ -99,6 +99,14 @@ if systemctl is-active --quiet ufw 2>/dev/null; then
     || warn "Could not change the firewall. Run: sudo ufw allow 24820/tcp && sudo ufw allow 24821 && sudo ufw allow 24830/tcp"
 fi
 
+# «Modo jugar» store games: each phone becomes a virtual gamepad (/dev/uinput, handed to the
+# person at the seat by the package's udev rule). Apply the rule now instead of at the next boot.
+if [[ -f /usr/lib/udev/rules.d/60-hyprbeam-uinput.rules ]] && [[ ! -w /dev/uinput ]]; then
+  sudo modprobe uinput 2>/dev/null || true
+  sudo udevadm control --reload 2>/dev/null && sudo udevadm trigger --name-match=uinput 2>/dev/null \
+    || warn "Phones cannot be gamepads until the next boot (udev did not reload)."
+fi
+
 if [[ ${XDG_CURRENT_DESKTOP:-} == *GNOME* ]]; then
 cat <<MSG
 
